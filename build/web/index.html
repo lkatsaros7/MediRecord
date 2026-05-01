@@ -31,7 +31,61 @@
 
   <title>doctor_patient_app</title>
   <link rel="manifest" href="manifest.json">
-</head>
+
+  <!-- Google Identity Services + Picker API -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+
+  <script>
+    // ── Token client (GIS implicit / token model) ──────────────────────
+    var _mediTokenClient = null;
+    var _mediTokenCallback = null;
+
+    window.mediInitGoogleSignIn = function(clientId, scope) {
+      _mediTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: scope,
+        callback: function(response) {
+          if (_mediTokenCallback) {
+            var cb = _mediTokenCallback;
+            _mediTokenCallback = null;
+            cb(response.access_token || '', response.error || '');
+          }
+        }
+      });
+    };
+
+    window.mediRequestGoogleToken = function(callback) {
+      _mediTokenCallback = callback;
+      // prompt:'' means silent if already consented; shows UI only first time
+      _mediTokenClient.requestAccessToken({ prompt: '' });
+    };
+
+    // ── Google Drive Picker ────────────────────────────────────────────
+    window.mediShowDrivePicker = function(accessToken, apiKey, callback) {
+      gapi.load('picker', function() {
+        var xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        var view = new google.picker.DocsView()
+          .setIncludeFolders(false)
+          .setMimeTypes(xlsxMime);
+        var picker = new google.picker.PickerBuilder()
+          .addView(view)
+          .setOAuthToken(accessToken)
+          .setDeveloperKey(apiKey)
+          .setCallback(function(data) {
+            if (data.action === google.picker.Action.PICKED) {
+              var f = data.docs[0];
+              callback(f.id, f.name, '');
+            } else if (data.action === google.picker.Action.CANCEL) {
+              callback('', '', 'cancelled');
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      });
+    };
+  </script>
+
 <body>
   <!--
     You can customize the "flutter_bootstrap.js" script.

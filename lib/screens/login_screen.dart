@@ -19,6 +19,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final FocusNode _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
